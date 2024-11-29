@@ -1,5 +1,6 @@
 ## Privileged Multitask for Images
 
+IMPORTANT: Download the Eurosat dataset first.
 
 Code files:
 - _clean_data.py_. Extraction of RGB (Regular) and NIR (Privileged) bands. Train test split.
