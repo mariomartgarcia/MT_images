@@ -18,6 +18,11 @@ import shutil
 #utim.extract_and_save_rgb_ir_eurosat('eurosat/EuroSATallBands/HerbaceousVegetation')
 #utim.extract_and_save_rgb_ir_eurosat('eurosat/EuroSATallBands/AnnualCrop')
 #utim.extract_and_save_rgb_ir_eurosat('eurosat/EuroSATallBands/PermanentCrop')
+utim.extract_and_save_rgb_ir_eurosat('eurosat/EuroSATallBands/Highway')
+utim.extract_and_save_rgb_ir_eurosat('eurosat/EuroSATallBands/Pasture')
+utim.extract_and_save_rgb_ir_eurosat('eurosat/EuroSATallBands/Industrial')
+utim.extract_and_save_rgb_ir_eurosat('eurosat/EuroSATallBands/Residential')
+
 
 
 # %%
@@ -25,59 +30,90 @@ import shutil
 #MODELO LOWER
 #----------------------------------------------------------------
 
+#var = ['AnnualCrop', 'PermanentCrop']
+var  = ['Pasture', 'Forest']
+var  = ['Industrial', 'Residential']
 var = ['AnnualCrop', 'PermanentCrop']
-
+var  = ['Highway', 'River']
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #DIVISION TRAIN-TEST LOWER
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 
-# Definir las rutas de las carpetas de las clases
-root_folder = 'eurosat/EuroSATallBands/'  # Carpeta raíz donde están class_1 y class_2
-classes = [var[0] + 'RGB', var[1] +'RGB']  # Listar las subcarpetas (class_1, class_2)
+import os
+import shutil
+import numpy as np
+from sklearn.model_selection import train_test_split
 
-# Preparar listas para almacenar las rutas de las imágenes y sus etiquetas
-image_paths = []
+# Definir las rutas de las carpetas de las clases
+root_folder = 'eurosat/EuroSATallBands/'  # Carpeta raíz donde están RGB y NIR
+classes = [var[0] + 'RGB', var[1] + 'RGB']  # Carpetas RGB
+nir_classes = [var[0] + 'NIR', var[1] + 'NIR']  # Carpetas NIR asociadas
+
+# Preparar listas para almacenar las rutas de las imágenes RGB, NIR y sus etiquetas
+rgb_paths = []
+nir_paths = []
 labels = []
 
-# Recorrer las carpetas de clases y recopilar las rutas de las imágenes
+# Recorrer las carpetas de clases y recopilar las rutas de las imágenes RGB y NIR
 for label, class_name in enumerate(classes):
-    class_folder = os.path.join(root_folder, class_name)
-    for image_file in os.listdir(class_folder):
+    rgb_class_folder = os.path.join(root_folder, class_name)
+    nir_class_folder = os.path.join(root_folder, nir_classes[label])
+
+    for image_file in os.listdir(rgb_class_folder):
         if image_file.endswith('.png'):  # Asegurarnos de solo procesar imágenes
-            image_paths.append(os.path.join(class_folder, image_file))
-            labels.append(label)  # Etiqueta de la clase (0 o 1)
+            rgb_path = os.path.join(rgb_class_folder, image_file)
+            nir_path = os.path.join(nir_class_folder, image_file.replace('RGB', 'NIR'))  # Asociar imagen NIR
+            if os.path.exists(nir_path):  # Verificar que la imagen NIR existe
+                rgb_paths.append(rgb_path)
+                nir_paths.append(nir_path)
+                labels.append(label)  # Etiqueta de la clase (0 o 1)
 
 # Convertir las listas a numpy arrays
-image_paths = np.array(image_paths)
+rgb_paths = np.array(rgb_paths)
+nir_paths = np.array(nir_paths)
 labels = np.array(labels)
 
 # Dividir en train (80%) y test (20%) usando un 80/20
-X_train, X_test, y_train, y_test = train_test_split(image_paths, labels, test_size=0.2, random_state=42, stratify=labels)
+X_train_rgb, X_test_rgb, X_train_nir, X_test_nir, y_train, y_test = train_test_split(
+    rgb_paths, nir_paths, labels, test_size=0.2, random_state=42, stratify=labels
+)
 
 # Crear directorios para guardar las particiones de train y test
 train_dir = 'eurosat/split/train'
 test_dir = 'eurosat/split/test'
 
-# Crear las subcarpetas para las clases dentro de los directorios de train y test
 for class_name in classes:
     os.makedirs(os.path.join(train_dir, class_name), exist_ok=True)
     os.makedirs(os.path.join(test_dir, class_name), exist_ok=True)
 
-# Mover las imágenes a sus respectivos directorios de train y test
-for i, image_path in enumerate(X_train):
+for class_name in nir_classes:
+    os.makedirs(os.path.join(train_dir, class_name), exist_ok=True)
+    os.makedirs(os.path.join(test_dir, class_name), exist_ok=True)
+
+# Mover las imágenes RGB y NIR a sus respectivos directorios de train y test
+for i, rgb_path in enumerate(X_train_rgb):
     label = y_train[i]
-    class_name = classes[label]
-    shutil.copy(image_path, os.path.join(train_dir, class_name, os.path.basename(image_path)))
+    rgb_class_name = classes[label]
+    nir_class_name = nir_classes[label]
 
-for i, image_path in enumerate(X_test):
+    # Copiar RGB
+    shutil.copy(rgb_path, os.path.join(train_dir, rgb_class_name, os.path.basename(rgb_path)))
+    # Copiar NIR
+    shutil.copy(X_train_nir[i], os.path.join(train_dir, nir_class_name, os.path.basename(X_train_nir[i])))
+
+for i, rgb_path in enumerate(X_test_rgb):
     label = y_test[i]
-    class_name = classes[label]
-    shutil.copy(image_path, os.path.join(test_dir, class_name, os.path.basename(image_path)))
+    rgb_class_name = classes[label]
+    nir_class_name = nir_classes[label]
 
-print(f"Se han creado los conjuntos de train y test con {len(X_train)} imágenes para entrenamiento y {len(X_test)} para prueba.")
+    # Copiar RGB
+    shutil.copy(rgb_path, os.path.join(test_dir, rgb_class_name, os.path.basename(rgb_path)))
+    # Copiar NIR
+    shutil.copy(X_test_nir[i], os.path.join(test_dir, nir_class_name, os.path.basename(X_test_nir[i])))
 
+print(f"Se han creado los conjuntos de train y test con {len(X_train_rgb)} imágenes RGB para entrenamiento y {len(X_test_rgb)} para prueba.")
 
 
 

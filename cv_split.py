@@ -2,7 +2,7 @@
 import tifffile as tiff
 import matplotlib.pyplot as plt
 from PIL import Image
-import utils_image as utim
+import utils as utim
 import pandas as pd
 import os
 from sklearn.model_selection import StratifiedKFold, train_test_split

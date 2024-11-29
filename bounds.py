@@ -17,7 +17,12 @@ import numpy as np
 
 
 
-var = ['AnnualCrop', 'PermanentCrop']
+#var = ['AnnualCrop', 'PermanentCrop']
+var  = ['Pasture', 'Forest']
+var  = ['Highway', 'River']
+var  = ['Industrial', 'Residential']
+var = ['Pasture', 'PermanentCrop']
+
 # %%
 
 #----------------------------------------------------------------
@@ -25,7 +30,7 @@ var = ['AnnualCrop', 'PermanentCrop']
 #----------------------------------------------------------------
 
 # Define the path to your dataset
-dataset_dir = 'eurosat/fr_split/train/'
+dataset_dir = 'eurosat/split/train/'
 
 classes = [var[0] + 'RGB', var[1] + 'RGB']
 # Collect file paths and labels
@@ -44,7 +49,7 @@ print(df_train.head())  # Verify data
 
 
 # Define the path to your dataset
-dataset_dir = 'eurosat/fr_split/test/'
+dataset_dir = 'eurosat/split/test/'
 
 # Collect file paths and labels
 data = []
@@ -147,7 +152,7 @@ print(err)
 #----------------------------------------------------------------
 
 # Define the path to your dataset
-dataset_dir = 'eurosat/fr_split/trainPI/'
+dataset_dir = 'eurosat/split/trainPI/'
 classes = [var[0] + 'PI', var[1] + 'PI']
 # Collect file paths and labels
 data = []
@@ -165,7 +170,7 @@ print(df_train.head())  # Verify data
 
 
 # Define the path to your dataset
-dataset_dir = 'eurosat/fr_split/testPI/'
+dataset_dir = 'eurosat/split/testPI/'
 
 # Collect file paths and labels
 data = []
