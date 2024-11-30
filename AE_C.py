@@ -30,15 +30,12 @@ def simple_unet(input_shape=(64, 64, 3)):
     conv2 = layers.Conv2D(64, (3, 3), padding="same", activation="relu")(conv2)
     pool2 = layers.MaxPooling2D((2, 2))(conv2)
 
-    # Decoder: 2 capas de Conv2D
+    # Decoder
     up1 = layers.Conv2DTranspose(64, (3, 3), strides=(2, 2), padding="same", activation="relu")(pool2)
     conv3 = layers.Conv2D(64, (3, 3), padding="same", activation="relu")(up1)
-    conv3 = layers.Conv2D(64, (3, 3), padding="same", activation="relu")(conv3)
 
-    # 2ª capa en Decoder
     up2 = layers.Conv2DTranspose(32, (3, 3), strides=(2, 2), padding="same", activation="relu")(conv3)
     conv4 = layers.Conv2D(32, (3, 3), padding="same", activation="relu")(up2)
-    conv4 = layers.Conv2D(32, (3, 3), padding="same", activation="relu")(conv4)
 
     # Output layer (un solo canal para la imagen IR)
     output = layers.Conv2D(1, (1, 1), activation="sigmoid")(conv4)  # Imagen IR simulada en escala de grises

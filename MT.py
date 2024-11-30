@@ -89,11 +89,9 @@ def simple_unet(input_shape=(64, 64, 3)):
     # Decoder
     up1 = layers.Conv2DTranspose(64, (3, 3), strides=(2, 2), padding="same", activation="relu")(pool2)
     conv3 = layers.Conv2D(64, (3, 3), padding="same", activation="relu")(up1)
-    conv3 = layers.Conv2D(64, (3, 3), padding="same", activation="relu")(conv3)
 
     up2 = layers.Conv2DTranspose(32, (3, 3), strides=(2, 2), padding="same", activation="relu")(conv3)
     conv4 = layers.Conv2D(32, (3, 3), padding="same", activation="relu")(up2)
-    conv4 = layers.Conv2D(32, (3, 3), padding="same", activation="relu")(conv4)
 
     # Output layer (IR predicha)
     ir_output = layers.Conv2D(1, (1, 1), activation="sigmoid", name="ir_output")(conv4)
