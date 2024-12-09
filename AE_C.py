@@ -236,8 +236,9 @@ for i in ran:
 print(err)
 
 
-'''
+
 # %%
+'''
 pre = model.predict(test_rgb)
 j = 2
 
