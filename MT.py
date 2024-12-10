@@ -149,7 +149,7 @@ multi_task_model = models.Model(
     outputs=[ {
             "ir_output": ir_predicted,
             "classification_output": classification_output,
-        }]
+        }])
 
 multi_task_model.compile(
     optimizer='adam',
@@ -177,10 +177,6 @@ history = multi_task_model.fit(
     batch_size=500,
 )
 
-# %%
-
-
-
 
 predictions = np.round(np.ravel(multi_task_model.predict(test_rgb)['classification_output']))
 # Calculate errors
@@ -189,130 +185,6 @@ print(1 - accuracy_score(test_labels, predictions))
 # %%
 
 
-from tensorflow.keras import models
-import tensorflow.keras.backend as K
-
-# Definir función de pérdida personalizada
-def custom_loss(y_true, y_pred):
-    # Extraer las partes correspondientes de las salidas y las etiquetas
-    ir_true, ir_pred = y_true[0], y_pred[0]  # Para IR
-    classification_true, classification_pred = y_true[1], y_pred[1]  # Para clasificación
-
-    # Calcular las pérdidas individuales
-    mse_loss = K.mean(K.square(ir_true - ir_pred))  # Mean Squared Error
-    bce_loss = K.binary_crossentropy(classification_true, classification_pred)  # Binary Crossentropy
-
-    # Combinar las pérdidas
-    return mse_loss + bce_loss
-
-# Crear modelo combinado
-multi_task_model = models.Model(
-    inputs=rgb_input, 
-    outputs=[
-        ir_predicted,
-        classification_output,
-    ]
-)
-
-# Compilación del modelo
-multi_task_model.compile(
-    optimizer='adam',
-    loss=custom_loss
-)
-
-# Entrenamiento
-epochs = 1  # Modifica según sea necesario
-batch_size = 500
-history = multi_task_model.fit(
-    train_rgb,  # Input: imágenes RGB
-    [
-        train_nir,  # Salida deseada para la U-Net
-        train_labels,  # Etiquetas binarias para la clasificación
-    ],
-    validation_data=(
-        val_rgb,
-        [
-            val_nir,
-            val_labels,
-        ]
-    ),
-    epochs=epochs,
-    batch_size=batch_size,
-)
-
-# %%
-
-#NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
-#NEW PART UNDER CONSTRUCTION 
-#NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
-def multi_task(y_true, y_pred):
-    y_tr = max(y_true[:, 0])
-    pri = y_true[:, 1]
-
-    tf.print(y_true)
-    tf.print(tf.shape(y_pred))
-    c_pre, pi_pre  = y_pred[0], y_pred[1]
-
-    #pi_pre = tf.reshape(pi_pre, [-1, 1]) 
-
-
-
-    l1 = tf.reduce_mean(tf.keras.losses.MeanSquaredError(reduction = 'none')(pi_pre, pri))
-    l2 = tf.keras.losses.BinaryCrossentropy(reduction = 'none')(y_tr, c_pre)
-    return tf.reduce_mean(l1 + l2)
-
-#Joint model creation
-# Definir función de pérdida personalizada
-def custom_loss(y_true, y_pred):
-    # Extraer las partes correspondientes de las salidas y las etiquetas
-    ir_true, ir_pred = y_true[0], y_pred[0]  # Para IR
-    classification_true, classification_pred = y_true[1], y_pred[1]  # Para clasificación
-
-    # Calcular las pérdidas individuales
-    mse_loss = tf.reduce_mean(tf.keras.losses.MeanSquaredError(reduction = 'none')(ir_true, ir_pred))  # Mean Squared Error
-    bce_loss = K.binary_crossentropy(classification_true, classification_pred)  # Binary Crossentropy
-
-    # Combinar las pérdidas
-    return mse_loss + bce_loss
-
-# Crear modelo combinado
-# Expandir la forma del tensor classification_output
-classification_output_expanded = layers.Reshape((1, 1, 1))(classification_output)
-classification_output_upsampled = layers.UpSampling2D(size=(64, 64))(classification_output_expanded)  # Aumenta la resolución espacial
-conc= layers.Concatenate(axis=-1)([ir_predicted, classification_output_upsampled])
-
-
-multi_task_model = models.Model(
-    inputs=rgb_input, 
-    outputs=[conc
-    ]
-)
-
-# Compilación del modelo
-multi_task_model.compile(
-    optimizer='adam',
-    loss=multi_task
-)
-
-# Entrenamiento
-epochs = 1  # Modifica según sea necesario
-batch_size = 500
-history = multi_task_model.fit(
-    train_rgb,  # Input: imágenes RGB
-    [
-        train_nir,  # Salida deseada para la U-Net
-        train_labels,  # Etiquetas binarias para la clasificación
-    ],
-    validation_data=(
-        val_rgb,
-        [
-            val_nir,
-            val_labels,
-        ]
-    ),
-    epochs=epochs,
-    batch_size=2,
-)
 
 
 '''
@@ -335,19 +207,21 @@ def multi_task(y_true, y_pred):
 
 
 # %%
+
+#MULTI-TASK APPROACH WITHOUT SIGMA AND TEMPERATURE
+
+
 def multi_task(y_true, y_pred):
-    y_tr = y_true[:, 0]
-    pri = y_true[:, 1]
+    pri = y_true[:, :, :, 0]
+    y_tr = tf.reshape(tf.reduce_max(y_true[:, :, :, 1], axis=(1, 2)), [-1, 1])
 
-    tf.print(y_tr)
-    tf.print(pri)
-    c_pre, pi_pre  = y_pred[0], y_pred[1]
-
-    #pi_pre = tf.reshape(pi_pre, [-1, 1]) 
+    pi_pre = y_pred[:, :, :, 0]
+    c_pre = tf.reshape(tf.reduce_max(y_pred[:, :, :, 1], axis=(1, 2)), [-1, 1])
 
 
-    l1 = tf.reduce_mean(tf.keras.losses.MeanSquaredError(reduction = 'none')(pi_pre, pri))
-    l2 = tf.keras.losses.BinaryCrossentropy(reduction = 'none')(y_tr, c_pre)
+    l1 = tf.reduce_mean(tf.square(pi_pre - pri), axis=[1, 2])
+    l2 = tf.keras.losses.binary_crossentropy(y_tr, c_pre)
+
     return tf.reduce_mean(l1 + l2)
 
 
@@ -358,11 +232,8 @@ conc= layers.Concatenate(axis=-1)([ir_predicted, classification_output_upsampled
 
 multi_task_model = models.Model(
     inputs=rgb_input, 
-    outputs=[conc
-    ]
+    outputs=[conc]
 )
-
-
 
 
 multi_task_model.compile(
@@ -379,8 +250,8 @@ train_label_ex = np.tile(expanded_array, (1, 64, 64, 1))
 expanded_array = np.expand_dims(val_labels, axis=(-1, -2, -3))  # Forma [n, 1, 1, 1]
 val_label_ex = np.tile(expanded_array, (1, 64, 64, 1)) 
 
-y_MT = np.column_stack([train_nir, train_label_ex])
-y_MT_val = np.column_stack([val_nir, val_label_ex])
+y_MT = np.concatenate([train_nir, train_label_ex], axis = -1)
+y_MT_val = np.concatenate([val_nir, val_label_ex], axis = -1)
 
 
 
@@ -389,7 +260,14 @@ history = multi_task_model.fit(
     train_rgb, y_MT,
     validation_data=(val_rgb, y_MT_val),
     epochs=1,
-    batch_size=2,
+    batch_size=500,
 )
+
+# %%
+
+pred = multi_task_model.predict(test_rgb)
+predictions = np.round(np.max(pred[:,:,:,1], axis = (1,2)))
+# Calculate errors
+print(1 - accuracy_score(test_labels, predictions))
 
 # %%
