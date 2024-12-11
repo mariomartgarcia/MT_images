@@ -130,8 +130,9 @@ for k in ran:
 
     model.fit(train_rgb, train_nir,
               validation_data=(val_rgb, val_nir),
-              epochs=1,
-              batch_size=500)
+              epochs=epo,
+              batch_size=bs,
+              callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss',  patience=pat)])
     
     pre_nir = model.predict(test_rgb)
     mae_kt.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pre_nir)))
@@ -224,8 +225,8 @@ for k in ran:
     # Entrenamiento
     mt_model.fit( train_rgb, y_MT, 
                 validation_data=(val_rgb, y_MT_val), 
-                epochs=1, 
-                batch_size=500,
+                epochs=epo, 
+                batch_size=bs,
                 callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss',  patience=pat)])
 
     pred = mt_model.predict(test_rgb)
