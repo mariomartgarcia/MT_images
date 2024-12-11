@@ -3,7 +3,7 @@
 import tifffile as tiff
 import matplotlib.pyplot as plt
 from PIL import Image
-import utils as utim
+import utils_preprocess as utim
 import pandas as pd
 import os
 from sklearn.model_selection import StratifiedKFold, train_test_split
@@ -31,10 +31,11 @@ utim.extract_and_save_rgb_ir_eurosat('eurosat/EuroSATallBands/Residential')
 #----------------------------------------------------------------
 
 #var = ['AnnualCrop', 'PermanentCrop']
-var  = ['Pasture', 'Forest']
 var  = ['Industrial', 'Residential']
 var = ['AnnualCrop', 'PermanentCrop']
 var  = ['Highway', 'River']
+var  = ['Pasture', 'Forest']
+
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #DIVISION TRAIN-TEST LOWER
@@ -119,6 +120,7 @@ print(f"Se han creado los conjuntos de train y test con {len(X_train_rgb)} imág
 
 
 # %%
+'''
 #----------------------------------------------------------------
 #MODELO UPPER
 #----------------------------------------------------------------
@@ -252,3 +254,4 @@ print(f"Se han creado los conjuntos de train y test con {len(X_train)} imágenes
 # %%
 
 # %%
+'''

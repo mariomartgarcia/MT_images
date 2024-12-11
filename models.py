@@ -91,3 +91,38 @@ def MT(reg_sh = (64, 64, 3), pri_sh = (128, 64, 3)):
     multi_task_model = models.Model(inputs=rgb_input, outputs=[conc])
     
     return multi_task_model
+
+
+def MT_band(reg_sh = (64, 64, 3), pri_sh = (64, 64, 4)):
+    unet_model = simple_unet(input_shape = reg_sh)
+    classifier_model = fcnn(input_shape = pri_sh) 
+
+    rgb_input = layers.Input(shape=reg_sh)
+    ir_predicted = unet_model(rgb_input)  
+
+    concatenated = layers.Concatenate(axis=-1)([rgb_input, ir_predicted])
+
+    classification_output = classifier_model(concatenated)
+
+    classification_output_expanded = layers.Reshape((1, 1, 1))(classification_output)
+    classification_output_upsampled = layers.UpSampling2D(size=(64, 64))(classification_output_expanded) 
+
+
+    #External parameters
+    sigma_output = ExtLayer()(rgb_input)
+    temp_output = ExtLayer()(rgb_input)
+
+
+    sigma_out_expand = layers.Reshape((1, 1, 1))(sigma_output)
+    sigma = layers.UpSampling2D(size=(64, 64))(sigma_out_expand) 
+
+    temperature_out_expand = layers.Reshape((1, 1, 1))(temp_output)
+    temperature = layers.UpSampling2D(size=(64, 64))(temperature_out_expand)
+
+
+    conc= layers.Concatenate(axis=-1)([ir_predicted, classification_output_upsampled,
+                                        sigma, temperature])
+
+    multi_task_model = models.Model(inputs=rgb_input, outputs=[conc])
+    
+    return multi_task_model
