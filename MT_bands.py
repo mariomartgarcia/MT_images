@@ -39,12 +39,13 @@ n_iter = 1
 
 dff = pd.DataFrame()
 
-text    = ['High. vs River', 'Pasture vs Forest' ] 
-dataset = [ ['Highway', 'River'], ['Pasture', 'Forest'] ]
+text    = ['High. vs River', 'Pasture vs Forest', 'Per. crop vs An. Crop', 'Pasture vs An. Crop', 'Pasture vs Per. Crop'] 
+dataset = [ ['Highway', 'River'], ['Pasture', 'Forest'], ['PermanentCrop', 'AnnualCrop'], ['Pasture', 'AnnualCrop'], ['Pasture', 'PermanentCrop']]
 
 datasets_dict = dict(zip(text, dataset))
 
 # %%
+
 for q in text:
     var = datasets_dict[q]
     err_up, err_b, mae_kt, err_kt = [[] for i in range(4)]
@@ -144,7 +145,8 @@ for q in text:
         train_concat = np.concatenate([train_rgb, pre_train], axis=3)
         val_concat = np.concatenate([val_rgb, pre_val], axis=3)
         test_concat = np.concatenate([test_rgb, pre_test], axis=3)
-
+        
+        
 
         #CLASSIFICATION
         model = mo.fcnn(input_shape = train_concat[0].shape)
@@ -320,7 +322,7 @@ for q in text:
     dff  = pd.concat([dff, df1]).reset_index(drop = True)
 
 
-dff.to_csv('EurosatBands_' + str(epo) + '_' + str(bs) + '_' + str(pat)+ '_' + str(n_iter)+ '.csv')
+dff.to_csv('EuBands_' + str(epo) + '_' + str(bs) + '_' + str(pat)+ '_' + str(n_iter)+ '.csv')
 
 
 

@@ -34,7 +34,8 @@ def simple_unet(input_shape=(64, 64, 3)):
     up2 = layers.Conv2DTranspose(32, (3, 3), strides=(2, 2), padding="same", activation="relu")(conv3)
     conv4 = layers.Conv2D(32, (3, 3), padding="same", activation="relu")(up2)
 
-    # Output layer (IR predicha)
+    #Output layer (IR predicha)
+    #Sigmoid activation. NIR is normalized between [0,1].
     ir_output = layers.Conv2D(1, (1, 1), activation="sigmoid", name="ir_output")(conv4)
 
     return models.Model(inputs=inputs, outputs=ir_output)
