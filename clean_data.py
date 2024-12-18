@@ -32,9 +32,9 @@ utim.extract_and_save_rgb_ir_eurosat('eurosat/EuroSATallBands/Residential')
 
 #var = ['AnnualCrop', 'PermanentCrop']
 var  = ['Industrial', 'Residential']
-var = ['AnnualCrop', 'PermanentCrop']
 var  = ['Highway', 'River']
 var  = ['Pasture', 'Forest']
+var = ['AnnualCrop', 'PermanentCrop']
 
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXX

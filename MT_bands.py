@@ -42,6 +42,8 @@ dff = pd.DataFrame()
 text    = ['High. vs River', 'Pasture vs Forest', 'Per. crop vs An. Crop', 'Pasture vs An. Crop', 'Pasture vs Per. Crop'] 
 dataset = [ ['Highway', 'River'], ['Pasture', 'Forest'], ['PermanentCrop', 'AnnualCrop'], ['Pasture', 'AnnualCrop'], ['Pasture', 'PermanentCrop']]
 
+
+
 datasets_dict = dict(zip(text, dataset))
 
 # %%
@@ -322,7 +324,7 @@ for q in text:
     dff  = pd.concat([dff, df1]).reset_index(drop = True)
 
 
-dff.to_csv('EuBands_' + str(epo) + '_' + str(bs) + '_' + str(pat)+ '_' + str(n_iter)+ '.csv')
+dff.to_csv('EuBands_unet_' + str(epo) + '_' + str(bs) + '_' + str(pat)+ '_' + str(n_iter)+ '.csv')
 
 
 
