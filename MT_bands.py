@@ -30,19 +30,19 @@ bs = args.bs
 pat = args.pat
 n_iter = args.iter
 
-
+'''
 epo = 1
 bs = 500
 pat = 5
 n_iter = 1
-
+'''
 
 dff = pd.DataFrame()
 
-#text    = ['High. vs River', 'Pasture vs Forest', 'Per. crop vs An. Crop', 'Pasture vs An. Crop', 'Pasture vs Per. Crop'] 
-#dataset = [ ['Highway', 'River'], ['Pasture', 'Forest'], ['PermanentCrop', 'AnnualCrop'], ['Pasture', 'AnnualCrop'], ['Pasture', 'PermanentCrop']]
-text    = ['High. vs River']
-dataset = [ ['Highway', 'River']]
+text    = ['High. vs River', 'Pasture vs Forest', 'Per. crop vs An. Crop', 'Pasture vs An. Crop', 'Pasture vs Per. Crop'] 
+dataset = [ ['Highway', 'River'], ['Pasture', 'Forest'], ['PermanentCrop', 'AnnualCrop'], ['Pasture', 'AnnualCrop'], ['Pasture', 'PermanentCrop']]
+#text    = ['High. vs River']
+#dataset = [ ['Highway', 'River']]
 
 datasets_dict = dict(zip(text, dataset))
 
