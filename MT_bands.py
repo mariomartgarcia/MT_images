@@ -54,12 +54,17 @@ for q in text:
     err_mt, err_mt_tpd, err_mt_pfd = [[] for i in range(3)]
     err_pfd, err_tpd = [[] for i in range(2)]
 
+    #EUROSAT
+
+    #------------------------------------------------------------------------------------------------
     # Load train data with labels
     input_size = (64, 64)
     train_rgb, train_nir, train_labels = ut.load_image_pairs_with_labels('eurosat/split/train/', var, input_size=input_size)
 
     # Load test data with labels
     test_rgb, test_nir, test_labels = ut.load_image_pairs_with_labels('eurosat/split/test/', var, input_size=input_size)
+    #------------------------------------------------------------------------------------------------
+
 
     test_pri = np.concatenate([test_rgb, test_nir], axis=3)
 

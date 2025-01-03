@@ -42,39 +42,6 @@ def load_image_pairs_with_labels(data_dir, classes, input_size=(64, 64)):
     
     return rgb_images, nir_images, labels
 
-def load_image_volcano(data_dir, classes, input_size=(224, 224)):
-    rgb_paths = []
-    alpha_paths = []
-    labels = []  # Guardar etiquetas: 0 para 'NoActivity', 1 para 'YesActivity'
-
-    for label, class_name in enumerate(classes):
-        rgb_folder = os.path.join(data_dir, f'{class_name}RGB')
-        alpha_folder = os.path.join(data_dir, f'{class_name}A')
-
-        for file_name in os.listdir(rgb_folder):
-            rgb_path = os.path.join(rgb_folder, file_name)
-            alpha_path = os.path.join(alpha_folder, file_name)
-
-            if os.path.exists(rgb_path) and os.path.exists(alpha_path):
-                rgb_paths.append(rgb_path)
-                alpha_paths.append(alpha_path)
-                labels.append(label)  # Etiqueta basada en el índice de `classes`
-            else:
-                print('Warning: mismatch')
-                print(f'Missing file: {rgb_path}' if not os.path.exists(rgb_path) else f'Missing file: {alpha_path}')
-
-    # Preprocesar imágenes
-    def preprocess_image(image_path, target_size=input_size):
-        img = load_img(image_path, target_size=target_size)
-        return img_to_array(img) / 255.0  # Normalizar a [0, 1]
-
-    rgb_images = np.array([preprocess_image(path) for path in rgb_paths])
-    alpha_images = np.array([preprocess_image(path)[:, :, 0:1] for path in alpha_paths])  # Grayscale alpha channel
-    labels = np.array(labels)  # Convertir etiquetas a numpy array
-
-    return rgb_images, alpha_images, labels
-
-
 
 def concatenate_images(rgb_images, nir_predictions):
     expand = np.repeat(nir_predictions, 3, axis=-1)
