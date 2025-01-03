@@ -87,8 +87,8 @@ def loss_MT(y_true, y_pred):
 
     pi_pre = y_pred[:, :, :, 0]
     c_pre = tf.reshape(tf.reduce_max(y_pred[:, :, :, 1], axis=(1, 2)), [-1, 1])
-    sigma = tf.reshape(tf.reduce_max(y_pred[:, :, :, 2], axis=(1, 2)), [-1, 1])
-    temperature = tf.reshape(tf.reduce_max(y_pred[:, :, :, 3], axis=(1, 2)), [-1, 1])
+    sigma = tf.reduce_max(y_pred[:, :, :, 2], axis=(1, 2))
+    temperature = tf.reduce_max(y_pred[:, :, :, 3], axis=(1, 2))
 
     l1 = (1/(2*tf.math.exp(sigma)))*tf.reduce_mean(tf.square(pi_pre - pri), axis=[1, 2]) + tf.math.log(tf.sqrt(tf.math.exp(sigma)))
     l2 = (1/(tf.math.exp(temperature)))*tf.keras.losses.binary_crossentropy(y_tr, c_pre)  + tf.math.log(tf.sqrt(tf.math.exp(temperature)))
@@ -101,14 +101,16 @@ def loss_MT_TPD(y_true, y_pred):
     pri = y_true[:, :, :, 0]
     y_tr = tf.reshape(tf.reduce_max(y_true[:, :, :, 1], axis=(1, 2)), [-1, 1])
     y_upper = tf.reshape(tf.reduce_max(y_true[:, :, :, 2], axis=(1, 2)), [-1, 1])
-    d = tf.reshape(tf.reduce_max(y_true[:, :, :, 3], axis=(1, 2)), [-1, 1])
-
+    #d = tf.reshape(tf.reduce_max(y_true[:, :, :, 3], axis=(1, 2)), [-1, 1])
+    d = tf.reduce_max(y_true[:, :, :, 3], axis=(1, 2))
 
 
     pi_pre = y_pred[:, :, :, 0]
     c_pre = tf.reshape(tf.reduce_max(y_pred[:, :, :, 1], axis=(1, 2)), [-1, 1])
-    sigma = tf.reshape(tf.reduce_max(y_pred[:, :, :, 2], axis=(1, 2)), [-1, 1])
-    temperature = tf.reshape(tf.reduce_max(y_pred[:, :, :, 3], axis=(1, 2)), [-1, 1])
+    #sigma = tf.reshape(tf.reduce_max(y_pred[:, :, :, 2], axis=(1, 2)), [-1, 1])
+    #temperature = tf.reshape(tf.reduce_max(y_pred[:, :, :, 3], axis=(1, 2)), [-1, 1])
+    sigma = tf.reduce_max(y_pred[:, :, :, 2], axis=(1, 2))
+    temperature = tf.reduce_max(y_pred[:, :, :, 3], axis=(1, 2))
 
     l1 = (1/(2*tf.math.exp(sigma)))*tf.reduce_mean(tf.square(pi_pre - pri), axis=[1, 2]) + tf.math.log(tf.sqrt(tf.math.exp(sigma)))
     bce_r = tf.keras.losses.binary_crossentropy(y_tr, c_pre)
@@ -118,7 +120,6 @@ def loss_MT_TPD(y_true, y_pred):
     return tf.reduce_mean(l1 + l2)
 
 
-
 def loss_MT_PFD(y_true, y_pred):
     pri = y_true[:, :, :, 0]
     y_tr = tf.reshape(tf.reduce_max(y_true[:, :, :, 1], axis=(1, 2)), [-1, 1])
@@ -126,11 +127,10 @@ def loss_MT_PFD(y_true, y_pred):
 
     pi_pre = y_pred[:, :, :, 0]
     c_pre = tf.reshape(tf.reduce_max(y_pred[:, :, :, 1], axis=(1, 2)), [-1, 1])
-    sigma = tf.reshape(tf.reduce_max(y_pred[:, :, :, 2], axis=(1, 2)), [-1, 1])
-    temperature = tf.reshape(tf.reduce_max(y_pred[:, :, :, 3], axis=(1, 2)), [-1, 1])
+    sigma = tf.reduce_max(y_pred[:, :, :, 2], axis=(1, 2))
+    temperature = tf.reduce_max(y_pred[:, :, :, 3], axis=(1, 2))
 
     l1 = (1/(2*tf.math.exp(sigma)))*tf.reduce_mean(tf.square(pi_pre - pri), axis=[1, 2]) + tf.math.log(tf.sqrt(tf.math.exp(sigma)))
     bce = 0.5*tf.keras.losses.binary_crossentropy(y_upper, c_pre) + 0.5*tf.keras.losses.binary_crossentropy(y_tr, c_pre) 
     l2 = (1/(tf.math.exp(temperature)))*(bce) + tf.math.log(tf.sqrt(tf.math.exp(temperature)))
-
     return tf.reduce_mean(l1 + l2)
