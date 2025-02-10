@@ -24,6 +24,16 @@ utim.extract_and_save_rgb_ir_eurosat('eurosat/EuroSATallBands/Industrial')
 utim.extract_and_save_rgb_ir_eurosat('eurosat/EuroSATallBands/Residential')
 
 
+utim.extract_and_save_rgb_nir_swir_eurosat('eurosat/EuroSATallBands/River')
+utim.extract_and_save_rgb_nir_swir_eurosat('eurosat/EuroSATallBands/Forest')
+utim.extract_and_save_rgb_nir_swir_eurosat('eurosat/EuroSATallBands/HerbaceousVegetation')
+utim.extract_and_save_rgb_nir_swir_eurosat('eurosat/EuroSATallBands/AnnualCrop')
+utim.extract_and_save_rgb_nir_swir_eurosat('eurosat/EuroSATallBands/PermanentCrop')
+utim.extract_and_save_rgb_nir_swir_eurosat('eurosat/EuroSATallBands/Highway')
+utim.extract_and_save_rgb_nir_swir_eurosat('eurosat/EuroSATallBands/Pasture')
+utim.extract_and_save_rgb_nir_swir_eurosat('eurosat/EuroSATallBands/Industrial')
+utim.extract_and_save_rgb_nir_swir_eurosat('eurosat/EuroSATallBands/Residential')
+
 
 # %%
 #----------------------------------------------------------------

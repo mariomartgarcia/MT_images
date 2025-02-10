@@ -7,20 +7,20 @@ def LUPI_gain(ub, lb, x):
     return ((x - lb) / (ub - lb) )*100
 
 
-def load_image_pairs_with_labels(data_dir, classes, input_size=(64, 64)):
+def load_image_pairs_with_labels(data_dir, classes, input_size=(64, 64), priv = 'NIR'):
     rgb_paths = []
     nir_paths = []
     labels = []  # Guardar etiquetas: 0 para 'Highway', 1 para 'River'
 
     for label, class_name in enumerate(classes):
         rgb_folder = os.path.join(data_dir, f'{class_name}RGB')
-        nir_folder = os.path.join(data_dir, f'{class_name}NIR')
+        nir_folder = os.path.join(data_dir, f'{class_name}' + priv)
 
         for file_name in os.listdir(rgb_folder):
             base_name = "_".join(file_name.split('_')[:-1]) 
 
             rgb_path = os.path.join(rgb_folder, base_name + '_RGB.png')
-            nir_path = os.path.join(nir_folder, base_name + '_NIR.png')
+            nir_path = os.path.join(nir_folder, base_name + '_' + priv + '.png')
 
             if os.path.exists(rgb_path) and os.path.exists(nir_path):
                 rgb_paths.append(rgb_path)
@@ -41,6 +41,50 @@ def load_image_pairs_with_labels(data_dir, classes, input_size=(64, 64)):
     labels = np.array(labels)  # Convertir las etiquetas a numpy array
     
     return rgb_images, nir_images, labels
+
+
+
+
+def load_image_pairs_with_labels_s2_s1(data_dir, classes, input_size=(256, 256)):
+    s2_paths = []
+    s1_paths = []
+    labels = []  # Etiquetas: por ejemplo, 0 para la primera clase, 1 para la segunda
+
+    for label, class_name in enumerate(classes):
+        s2_folder = os.path.join(data_dir, f'{class_name}_s2')
+        s1_folder = os.path.join(data_dir, f'{class_name}_s1')
+
+        for file_name in os.listdir(s2_folder):
+
+            parts = file_name.split('_')
+            p1 = "_".join(parts[:2]) 
+            p2 = "_".join(parts[3:]) 
+            
+
+            s2_path = os.path.join(s2_folder, p1 + '_s2_' +  p2)
+            s1_path = os.path.join(s1_folder, p1 + '_s1_' +  p2)
+
+            if os.path.exists(s2_path) and os.path.exists(s1_path):
+                s2_paths.append(s2_path)
+                s1_paths.append(s1_path)
+                labels.append(label)  # Etiqueta basada en el índice de `classes`
+            else:
+                print('Warning mismatch')
+                print(s2_path)
+                print(s1_path)
+
+    # Preprocesar imágenes
+    def preprocess_image(image_path):
+        img = load_img(image_path, target_size=input_size)
+        return img_to_array(img) / 255.0  # Normalizar a [0, 1]
+
+    # Cargar y procesar imágenes
+    s2_images = np.array([preprocess_image(path) for path in s2_paths])  # Imágenes S2
+    s1_images = np.array([preprocess_image(path)[:, :, 0:1] for path in s1_paths])  # Imágenes S1 en escala de grises
+    labels = np.array(labels)  # Convertir etiquetas a array numpy
+    
+    return s2_images, s1_images, labels
+
 
 
 def concatenate_images(rgb_images, nir_predictions):
@@ -115,7 +159,6 @@ def loss_MT_TPD(y_true, y_pred):
     bce_r = tf.keras.losses.binary_crossentropy(y_tr, c_pre)
     bce_inst = tf.keras.losses.binary_crossentropy(c_pre, y_upper) 
     l2 = (1/(tf.math.exp(temperature)))*(0.5*(bce_r) + 0.5*(tf.math.multiply(d,bce_inst) - tf.math.multiply(1-d, bce_inst))) + tf.math.log(tf.sqrt(tf.math.exp(temperature)))
-
     return tf.reduce_mean(l1 + l2)
 
 

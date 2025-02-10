@@ -67,3 +67,113 @@ def extract_and_save_rgb_ir_eurosat(input_folder):
                 print(f"Saltando archivo (estructura no válida o no tiene suficientes bandas): {file_path}")
 
     print("Proceso completado.")
+
+
+
+import os
+import numpy as np
+from PIL import Image
+import tifffile as tiff
+
+
+
+def extract_and_save_rgb_nir_swir_eurosat(input_folder):
+
+    def normalize_band(band):
+        norm_band = (band - band.min()) / (band.max() - band.min()) * 255
+        return np.clip(norm_band, 0, 255).astype(np.uint8)
+
+    base_dir = os.path.dirname(input_folder)
+    subfolder_name = os.path.basename(input_folder)
+
+    # Crear carpetas de salida
+    rgb_folder = os.path.join(base_dir, f"{subfolder_name}RGB")
+    nir_folder = os.path.join(base_dir, f"{subfolder_name}NIR")
+    swir_folder = os.path.join(base_dir, f"{subfolder_name}SWIR")
+    os.makedirs(rgb_folder, exist_ok=True)
+    os.makedirs(nir_folder, exist_ok=True)
+    os.makedirs(swir_folder, exist_ok=True)
+
+    # Procesar cada archivo TIFF
+    for filename in os.listdir(input_folder):
+        if filename.endswith('.tif'):
+            file_path = os.path.join(input_folder, filename)
+
+            try:
+                tiff_image = tiff.imread(file_path)
+
+                if len(tiff_image.shape) == 3 and tiff_image.shape[2] >= 13:
+                    # Extraer bandas RGB
+                    band_4 = normalize_band(tiff_image[:, :, 3])  # Rojo
+                    band_3 = normalize_band(tiff_image[:, :, 2])  # Verde
+                    band_2 = normalize_band(tiff_image[:, :, 1])  # Azul
+
+                    rgb_image = np.stack((band_4, band_3, band_2), axis=-1)
+                    rgb_output_path = os.path.join(rgb_folder, f"{os.path.splitext(filename)[0]}_RGB.png")
+                    Image.fromarray(rgb_image).save(rgb_output_path)
+                    print(f"Guardada RGB: {rgb_output_path}")
+
+                    # Extraer banda NIR
+                    nir_band = normalize_band(tiff_image[:, :, 7])  # Infrarrojo cercano
+                    nir_output_path = os.path.join(nir_folder, f"{os.path.splitext(filename)[0]}_NIR.png")
+                    Image.fromarray(nir_band).save(nir_output_path)
+                    print(f"Guardada NIR: {nir_output_path}")
+
+                    # Extraer banda SWIR
+                    swir_band = normalize_band(tiff_image[:, :, 10])  # SWIR
+                    swir_output_path = os.path.join(swir_folder, f"{os.path.splitext(filename)[0]}_SWIR.png")
+                    Image.fromarray(swir_band).save(swir_output_path)
+                    print(f"Guardada SWIR: {swir_output_path}")
+                else:
+                    print(f"Saltando archivo (estructura no válida o insuficientes bandas): {file_path}")
+
+            except Exception as e:
+                print(f"Error procesando archivo {file_path}: {e}")
+
+    print("Proceso completado.")
+
+
+
+import os
+import shutil
+
+def filter_and_copy_matching_files(rgb_folder, swir_folder, output_folder):
+    # Crear carpeta de salida si no existe
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Obtener nombres base de archivos en la carpeta RGB
+    rgb_files = os.listdir(rgb_folder)
+    rgb_base_names = {
+        "_".join(filename.split("_")[:-1]) for filename in rgb_files if "_" in filename
+    }
+
+    # Filtrar archivos de la carpeta SWIR basados en nombres base
+    swir_files = os.listdir(swir_folder)
+    matched_files = [
+        filename for filename in swir_files
+        if "_".join(filename.split("_")[:-1]) in rgb_base_names
+    ]
+
+    # Copiar archivos coincidentes a la carpeta de salida
+    for filename in matched_files:
+        source_path = os.path.join(swir_folder, filename)
+        destination_path = os.path.join(output_folder, filename)
+        shutil.copy(source_path, destination_path)
+
+    print(f"Archivos copiados: {len(matched_files)}")
+    return matched_files
+
+
+
+
+
+for i in ['River', 'Forest', 'AnnualCrop', 'PermanentCrop', 'Highway', 'Pasture']:
+    for j in ['train', 'test']:
+        # Directorios de ejemplo
+        rgb_folder = "eurosat/split/" + j + "/" + i  + "RGB"
+        swir_folder = "eurosat/EuroSATallBands/" + i + "SWIR"
+        output_folder = "eurosat/split/" + j + "/" + i + "SWIR"
+
+        # Ejecutar la función
+        copied_files = filter_and_copy_matching_files(rgb_folder, swir_folder, output_folder)
+        print("Archivos copiados:", copied_files)
