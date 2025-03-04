@@ -32,7 +32,7 @@ n_iter = args.iter
 PP = args.pp
 
 '''
-epo = 1
+epo = 10
 bs = 500
 pat = 5
 n_iter = 1
@@ -53,28 +53,26 @@ datasets_dict = dict(zip(text, dataset))
 for q in text:
     var = datasets_dict[q]
     err_up, err_b, mae_kt, mae_kt_pfd, mae_kt_tpd = [[] for i in range(5)]
+    mae_mt, mae_mt_pfd, mae_mt_tpd = [[] for i in range(3)]
     err_kt, err_kt_tpd, err_kt_pfd = [[] for i in range(3)]
     err_mt, err_mt_tpd, err_mt_pfd = [[] for i in range(3)]
     err_pfd, err_tpd = [[] for i in range(2)]
 
     #EUROSAT
-
-    #------------------------------------------------------------------------------------------------
-    # Load train data with labels
+    print(q)
     input_size = (64, 64)
-    train_rgb, train_nir, train_labels = ut.load_image_pairs_with_labels('eurosat/split/train/', var, input_size=input_size, priv = PP)
+    train_rgbRAW, train_nirRAW, train_labelsRAW = ut.load_image_pairs_with_labels('eurosat/split/train/', var, input_size=input_size, priv = PP)
 
     # Load test data with labels
     test_rgb, test_nir, test_labels = ut.load_image_pairs_with_labels('eurosat/split/test/', var, input_size=input_size, priv = PP)
-
     test_pri = np.concatenate([test_rgb, test_nir], axis=3)
 
     ran = np.random.randint(1000, size = n_iter)
     for k in ran:
-        
+
         # Split train into train and validation
         train_rgb, val_rgb, train_nir, val_nir, train_labels, val_labels = train_test_split(
-            train_rgb, train_nir, train_labels, test_size=0.2, random_state=k)
+            train_rgbRAW, train_nirRAW, train_labelsRAW, test_size=0.2, random_state=k)
 
         
         #----------------------------------------------
@@ -333,6 +331,8 @@ for q in text:
         predictions = np.round(np.max(pred[:,:,:,1], axis = (1,2)))
         # Calculate errors
         err_mt.append(1 - accuracy_score(test_labels, predictions))
+        mae_mt.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+
 
         #---------------------------------------------
         #MT PFD
@@ -359,6 +359,8 @@ for q in text:
         predictions = np.round(np.max(pred[:,:,:,1], axis = (1,2)))
         # Calculate errors
         err_mt_pfd.append(1 - accuracy_score(test_labels, predictions))
+        mae_mt_pfd.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+
 
         #---------------------------------------------
         #MT TPD
@@ -384,7 +386,8 @@ for q in text:
         predictions = np.round(np.max(pred[:,:,:,1], axis = (1,2)))
         # Calculate errors
         err_mt_tpd.append(1 - accuracy_score(test_labels, predictions))
-        
+        mae_mt_tpd.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+
             
         tf.keras.backend.clear_session()
         
@@ -418,7 +421,19 @@ for q in text:
             'std_kt_tpd':  np.round(np.std(err_kt_tpd), 4),
             'std_mt':  np.round(np.std(err_mt), 4),
             'std_mt_pfd':  np.round(np.std(err_mt_pfd), 4),
-            'std_mt_tpd':  np.round(np.std(err_mt_tpd), 4)
+            'std_mt_tpd':  np.round(np.std(err_mt_tpd), 4),
+            'mae_kt':  np.round(np.mean(mae_kt), 4),
+            'mae_kt_pfd':  np.round(np.mean(mae_kt_pfd), 4),
+            'mae_kt_tpd':  np.round(np.mean(mae_kt_tpd), 4),
+            'mae_mt':   np.round(np.mean(mae_mt), 4),
+            'mae_mt_pfd':  np.round(np.mean(mae_mt_pfd), 4),
+            'mae_mt_tpd':  np.round(np.mean(mae_mt_tpd), 4),
+            'std_mae_kt':  np.round(np.std(mae_kt), 4),
+            'std_mae_kt_pfd':  np.round(np.std(mae_kt_pfd), 4),
+            'std_mae_kt_tpd':  np.round(np.std(mae_kt_tpd), 4),
+            'std_mae_mt':   np.round(np.std(mae_mt), 4),
+            'std_mae_mt_pfd':  np.round(np.std(mae_mt_pfd), 4),
+            'std_mae_mt_tpd':  np.round(np.std(mae_mt_tpd), 4)
             }   
 
     df1 = pd.DataFrame(off, index = [0])
@@ -426,7 +441,7 @@ for q in text:
     dff  = pd.concat([dff, df1]).reset_index(drop = True)
 
 
-dff.to_csv('EuBands_unet_R_' + PP + '_' + str(epo) + '_' + str(bs) + '_' + str(pat)+ '_' + str(n_iter)+ '.csv')
+dff.to_csv('EuBandsGPU_unet_R_' + PP + '_' + str(epo) + '_' + str(bs) + '_' + str(pat)+ '_' + str(n_iter)+ '.csv')
 
 
 
