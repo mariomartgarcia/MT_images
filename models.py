@@ -2,7 +2,7 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models
 
-
+'''
 def fcnn(input_shape=(64, 64, 3)):
     model = tf.keras.Sequential([
     tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
@@ -11,6 +11,29 @@ def fcnn(input_shape=(64, 64, 3)):
     tf.keras.layers.GlobalAveragePooling2D(),
     tf.keras.layers.Dense(32, activation='relu'),
     tf.keras.layers.Dense(1, activation='sigmoid')])
+    return model
+'''
+def fcnn(input_shape=(64, 64, 3)):
+    model = tf.keras.Sequential([
+        # Capa convolucional adicional
+        tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+        
+        # Capas convolucionales existentes
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D((2, 2)),  # MaxPooling adicional para mayor reducción espacial
+        tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
+        
+        # Capa de pooling global
+        tf.keras.layers.GlobalAveragePooling2D(),
+        
+        # Capas densas con las neuronas especificadas
+        tf.keras.layers.Dense(64, activation='relu'),
+        tf.keras.layers.Dense(32, activation='relu'),
+        tf.keras.layers.Dense(16, activation='relu'),
+        tf.keras.layers.Dense(1, activation='sigmoid')  # Salida binaria con sigmoid
+    ])
+    
     return model
 
 

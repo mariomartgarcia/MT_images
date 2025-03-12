@@ -10,7 +10,10 @@ import models as mo
 import pandas as pd
 import argparse
 
-#python MT_bands.py -PP SWIR -epo 1 -bs 500 -pat 5 -iter 1
+gpus = tf.config.list_physical_devices('GPU')
+print("GPUs disponibles:", gpus)
+
+#python MT_bands_LOSS.py -PP SWIR -epo 2 -bs 1000 -pat 1 -iter 1
 
 # %%
 parser = argparse.ArgumentParser()
@@ -45,6 +48,8 @@ dff = pd.DataFrame()
 #dataset = [ ['Highway', 'River'], ['Pasture', 'Forest'], ['PermanentCrop', 'AnnualCrop'], ['Pasture', 'AnnualCrop'], ['Pasture', 'PermanentCrop']]
 text    = ['High. vs River',  'Pasture vs An. Crop']
 dataset = [ ['Highway', 'River'], ['Pasture', 'AnnualCrop']]
+#text    = ['High. vs River']  
+#dataset = [ ['Highway', 'River']]
 
 datasets_dict = dict(zip(text, dataset))
 
@@ -56,6 +61,12 @@ for q in text:
     mae_mt, mae_mt_pfd, mae_mt_tpd = [[] for i in range(3)]
     err_kt, err_kt_tpd, err_kt_pfd = [[] for i in range(3)]
     err_mt, err_mt_tpd, err_mt_pfd = [[] for i in range(3)]
+
+    mae_mt_a, mae_mt_pfd_a, mae_mt_tpd_a = [[] for i in range(3)]
+    err_mt_a, err_mt_tpd_a, err_mt_pfd_a = [[] for i in range(3)]
+
+    mae_mt_b, mae_mt_pfd_b, mae_mt_tpd_b = [[] for i in range(3)]
+    err_mt_b, err_mt_tpd_b, err_mt_pfd_b = [[] for i in range(3)]
     err_pfd, err_tpd = [[] for i in range(2)]
 
     #EUROSAT
@@ -125,6 +136,7 @@ for q in text:
         pre = np.round(np.ravel(model.predict(test_rgb)))
         err_b.append( 1 - accuracy_score(pre, test_labels))
 
+        
         #---------------------------------------------
         #KNOWLEDGE TRANSFER STANDARD
         #---------------------------------------------
@@ -306,7 +318,7 @@ for q in text:
         y_pre = np.ravel([np.round(i) for i in model.predict(test_rgb)])
         err_tpd.append(1-accuracy_score(test_labels, y_pre))
 
-
+        
 
         #---------------------------------------------
         #MT
@@ -388,52 +400,266 @@ for q in text:
         err_mt_tpd.append(1 - accuracy_score(test_labels, predictions))
         mae_mt_tpd.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
 
+        #----------------------------------------------------------------------------------------------------------------
+        #MODIFICACIÓN A. Epsilon = 0
+
+        #---------------------------------------------
+        #MT
+        #---------------------------------------------
+        mt_model = mo.MT_band()
+        mt_model.compile(optimizer='adam', loss=ut.loss_MT_A)
+
+        train_label_ex = ut.expand_array(train_labels)    
+        val_label_ex = ut.expand_array(val_labels)  
+
+        y_MT = np.concatenate([train_nir, train_label_ex], axis = -1)
+        y_MT_val = np.concatenate([val_nir, val_label_ex], axis = -1)
+
+        # Entrenamiento
+        mt_model.fit( train_rgb, y_MT, 
+                    validation_data=(val_rgb, y_MT_val), 
+                    epochs=epo, 
+                    batch_size=bs,
+                    callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss',  patience=pat)], verbose = 0)
+
+        pred = mt_model.predict(test_rgb)
+        predictions = np.round(np.max(pred[:,:,:,1], axis = (1,2)))
+        # Calculate errors
+        err_mt_a.append(1 - accuracy_score(test_labels, predictions))
+        mae_mt_a.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+
+
+        #---------------------------------------------
+        #MT PFD
+        #---------------------------------------------
+        mt_model = mo.MT_band()
+        mt_model.compile(optimizer='adam', loss= ut.loss_MT_PFD_A)
+
+    
+        pre_upper_ex = ut.expand_array(pre_prob_upper) 
+        pre_upper_ex_val = ut.expand_array(pre_prob_upper_val) 
+
+
+        y_MT_PFD = np.concatenate([train_nir, train_label_ex, pre_upper_ex], axis = -1)
+        y_MT_PFD_val = np.concatenate([val_nir, val_label_ex, pre_upper_ex_val], axis = -1)
+
+        # Entrenamiento
+        mt_model.fit( train_rgb, y_MT_PFD, 
+                    validation_data=(val_rgb, y_MT_PFD_val), 
+                    epochs=epo, 
+                    batch_size=bs,
+                    callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss',  patience=pat)], verbose = 0)
+
+        pred = mt_model.predict(test_rgb)
+        predictions = np.round(np.max(pred[:,:,:,1], axis = (1,2)))
+        # Calculate errors
+        err_mt_pfd_a.append(1 - accuracy_score(test_labels, predictions))
+        mae_mt_pfd_a.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+
+
+        #---------------------------------------------
+        #MT TPD
+        #---------------------------------------------
+        mt_model = mo.MT_band()
+        mt_model.compile(optimizer='adam', loss=ut.loss_MT_TPD_A)
+
+    
+        delta_ex = ut.expand_array(delta_i) 
+        delta_ex_val = ut.expand_array(delta_i_val) 
+
+        y_MT = np.concatenate([train_nir, train_label_ex, pre_upper_ex, delta_ex], axis = -1)
+        y_MT_val = np.concatenate([val_nir, val_label_ex, pre_upper_ex_val, delta_ex_val], axis = -1)
+
+        # Entrenamiento
+        mt_model.fit( train_rgb, y_MT, 
+                    validation_data=(val_rgb, y_MT_val), 
+                    epochs=epo, 
+                    batch_size=bs,
+                    callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss',  patience=pat)], verbose = 0)
+
+        pred = mt_model.predict(test_rgb)
+        predictions = np.round(np.max(pred[:,:,:,1], axis = (1,2)))
+        # Calculate errors
+        err_mt_tpd_a.append(1 - accuracy_score(test_labels, predictions))
+        mae_mt_tpd_a.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+
+        #----------------------------------------------------------------------------------------------------------------
+        #MODIFICACIÓN B. Epsilon = 0 y NO REG
+
+        #---------------------------------------------
+        #MT
+        #---------------------------------------------
+        mt_model = mo.MT_band()
+        mt_model.compile(optimizer='adam', loss=ut.loss_MT_B)
+
+        train_label_ex = ut.expand_array(train_labels)    
+        val_label_ex = ut.expand_array(val_labels)  
+
+        y_MT = np.concatenate([train_nir, train_label_ex], axis = -1)
+        y_MT_val = np.concatenate([val_nir, val_label_ex], axis = -1)
+
+        # Entrenamiento
+        mt_model.fit( train_rgb, y_MT, 
+                    validation_data=(val_rgb, y_MT_val), 
+                    epochs=epo, 
+                    batch_size=bs,
+                    callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss',  patience=pat)], verbose = 0)
+
+        pred = mt_model.predict(test_rgb)
+        predictions = np.round(np.max(pred[:,:,:,1], axis = (1,2)))
+        # Calculate errors
+        err_mt_b.append(1 - accuracy_score(test_labels, predictions))
+        mae_mt_b.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+
+
+        #---------------------------------------------
+        #MT PFD
+        #---------------------------------------------
+        mt_model = mo.MT_band()
+        mt_model.compile(optimizer='adam', loss= ut.loss_MT_PFD_B)
+
+    
+        pre_upper_ex = ut.expand_array(pre_prob_upper) 
+        pre_upper_ex_val = ut.expand_array(pre_prob_upper_val) 
+
+
+        y_MT_PFD = np.concatenate([train_nir, train_label_ex, pre_upper_ex], axis = -1)
+        y_MT_PFD_val = np.concatenate([val_nir, val_label_ex, pre_upper_ex_val], axis = -1)
+
+        # Entrenamiento
+        mt_model.fit( train_rgb, y_MT_PFD, 
+                    validation_data=(val_rgb, y_MT_PFD_val), 
+                    epochs=epo, 
+                    batch_size=bs,
+                    callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss',  patience=pat)], verbose = 0)
+
+        pred = mt_model.predict(test_rgb)
+        predictions = np.round(np.max(pred[:,:,:,1], axis = (1,2)))
+        # Calculate errors
+        err_mt_pfd_b.append(1 - accuracy_score(test_labels, predictions))
+        mae_mt_pfd_b.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+
+
+        #---------------------------------------------
+        #MT TPD
+        #---------------------------------------------
+        mt_model = mo.MT_band()
+        mt_model.compile(optimizer='adam', loss=ut.loss_MT_TPD_B)
+
+    
+        delta_ex = ut.expand_array(delta_i) 
+        delta_ex_val = ut.expand_array(delta_i_val) 
+
+        y_MT = np.concatenate([train_nir, train_label_ex, pre_upper_ex, delta_ex], axis = -1)
+        y_MT_val = np.concatenate([val_nir, val_label_ex, pre_upper_ex_val, delta_ex_val], axis = -1)
+
+        # Entrenamiento
+        mt_model.fit( train_rgb, y_MT, 
+                    validation_data=(val_rgb, y_MT_val), 
+                    epochs=epo, 
+                    batch_size=bs,
+                    callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss',  patience=pat)], verbose = 0)
+
+        pred = mt_model.predict(test_rgb)
+        predictions = np.round(np.max(pred[:,:,:,1], axis = (1,2)))
+        # Calculate errors
+        err_mt_tpd_b.append(1 - accuracy_score(test_labels, predictions))
+        mae_mt_tpd_b.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+
             
         tf.keras.backend.clear_session()
         
     #Save the results
 
     off = {'name': q,
-            'err_up':np.round(np.mean(err_up), 4),
-            'err_b':  np.round(np.mean(err_b), 4),
-            'PFD': np.round(np.mean(err_pfd), 4),
-            'TPD': np.round(np.mean(err_tpd), 4),
-            'kt':  np.round(np.mean(err_kt), 4),
-            'kt_pfd':  np.round(np.mean(err_kt_pfd), 4),
-            'kt_tpd':  np.round(np.mean(err_kt_tpd), 4),
-            'mt':  np.round(np.mean(err_mt), 4),
-            'mt_pfd':  np.round(np.mean(err_mt_pfd), 4),
-            'mt_tpd':  np.round(np.mean(err_mt_tpd), 4),
-            'LUPI_pfd %': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_pfd), 4)),
-            'LUPI_tpd %': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_tpd), 4)),
-            'LUPI_KT %': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_kt), 4)),
-            'LUPI_KT PFD %': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_kt_pfd), 4)),
-            'LUPI_KT TPD %': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_kt_tpd), 4)),
-            'LUPI_MT %': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_mt), 4)),
-            'LUPI_MT_PFD%': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_mt_pfd), 4)),
-            'LUPI_MT_TPD%': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_mt_tpd), 4)),
-            'std_up':np.round(np.std(err_up), 4),
-            'std_b':  np.round(np.std(err_b), 4),
-            'std_PFD': np.round(np.std(err_pfd), 4),
-            'std_TPD': np.round(np.std(err_tpd), 4),
-            'std_kt':  np.round(np.std(err_kt), 4),
-            'std_kt_pfd':  np.round(np.std(err_kt_pfd), 4),
-            'std_kt_tpd':  np.round(np.std(err_kt_tpd), 4),
-            'std_mt':  np.round(np.std(err_mt), 4),
-            'std_mt_pfd':  np.round(np.std(err_mt_pfd), 4),
-            'std_mt_tpd':  np.round(np.std(err_mt_tpd), 4),
-            'mae_kt':  np.round(np.mean(mae_kt), 4),
-            'mae_kt_pfd':  np.round(np.mean(mae_kt_pfd), 4),
-            'mae_kt_tpd':  np.round(np.mean(mae_kt_tpd), 4),
-            'mae_mt':   np.round(np.mean(mae_mt), 4),
-            'mae_mt_pfd':  np.round(np.mean(mae_mt_pfd), 4),
-            'mae_mt_tpd':  np.round(np.mean(mae_mt_tpd), 4),
-            'std_mae_kt':  np.round(np.std(mae_kt), 4),
-            'std_mae_kt_pfd':  np.round(np.std(mae_kt_pfd), 4),
-            'std_mae_kt_tpd':  np.round(np.std(mae_kt_tpd), 4),
-            'std_mae_mt':   np.round(np.std(mae_mt), 4),
-            'std_mae_mt_pfd':  np.round(np.std(mae_mt_pfd), 4),
-            'std_mae_mt_tpd':  np.round(np.std(mae_mt_tpd), 4)
+                'err_up': np.round(np.mean(err_up), 4),
+                'err_b': np.round(np.mean(err_b), 4),
+                'PFD': np.round(np.mean(err_pfd), 4),
+                'TPD': np.round(np.mean(err_tpd), 4),
+                'kt':  np.round(np.mean(err_kt), 4),
+                'kt_pfd':  np.round(np.mean(err_kt_pfd), 4),
+                'kt_tpd':  np.round(np.mean(err_kt_tpd), 4),
+
+                'mt': np.round(np.mean(err_mt), 4),
+                'mt_pfd': np.round(np.mean(err_mt_pfd), 4),
+                'mt_tpd': np.round(np.mean(err_mt_tpd), 4),
+                
+                'err_mt_a': np.round(np.mean(err_mt_a), 4),
+                'err_mt_pfd_a': np.round(np.mean(err_mt_pfd_a), 4),
+                'err_mt_tpd_a': np.round(np.mean(err_mt_tpd_a), 4),
+                'err_mt_b': np.round(np.mean(err_mt_b), 4),
+                'err_mt_pfd_b': np.round(np.mean(err_mt_pfd_b), 4),
+                'err_mt_tpd_b': np.round(np.mean(err_mt_tpd_b), 4),
+
+                'LUPI_pfd %': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_pfd), 4)),
+                'LUPI_tpd %': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_tpd), 4)),
+                'LUPI_KT %': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_kt), 4)),
+                'LUPI_KT PFD %': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_kt_pfd), 4)),
+                'LUPI_KT TPD %': ut.LUPI_gain(np.round(np.mean(err_up), 4),  np.round(np.mean(err_b), 4), np.round(np.mean(err_kt_tpd), 4)),
+
+                'LUPI_MT %': ut.LUPI_gain(np.round(np.mean(err_up), 4), np.round(np.mean(err_b), 4), np.round(np.mean(err_mt), 4)),
+                'LUPI_MT_PFD%': ut.LUPI_gain(np.round(np.mean(err_up), 4), np.round(np.mean(err_b), 4), np.round(np.mean(err_mt_pfd), 4)),
+                'LUPI_MT_TPD%': ut.LUPI_gain(np.round(np.mean(err_up), 4), np.round(np.mean(err_b), 4), np.round(np.mean(err_mt_tpd), 4)),
+                
+                'LUPI_MT_A %': ut.LUPI_gain(np.round(np.mean(err_up), 4), np.round(np.mean(err_b), 4), np.round(np.mean(err_mt_a), 4)),
+                'LUPI_MT_PFD_A%': ut.LUPI_gain(np.round(np.mean(err_up), 4), np.round(np.mean(err_b), 4), np.round(np.mean(err_mt_pfd_a), 4)),
+                'LUPI_MT_TPD_A%': ut.LUPI_gain(np.round(np.mean(err_up), 4), np.round(np.mean(err_b), 4), np.round(np.mean(err_mt_tpd_a), 4)),
+                
+                'LUPI_MT_B %': ut.LUPI_gain(np.round(np.mean(err_up), 4), np.round(np.mean(err_b), 4), np.round(np.mean(err_mt_b), 4)),
+                'LUPI_MT_PFD_B%': ut.LUPI_gain(np.round(np.mean(err_up), 4), np.round(np.mean(err_b), 4), np.round(np.mean(err_mt_pfd_b), 4)),
+                'LUPI_MT_TPD_B%': ut.LUPI_gain(np.round(np.mean(err_up), 4), np.round(np.mean(err_b), 4), np.round(np.mean(err_mt_tpd_b), 4)),
+
+                'std_up': np.round(np.std(err_up), 4),
+                'std_b': np.round(np.std(err_b), 4),
+                'std_PFD': np.round(np.std(err_pfd), 4),
+                'std_TPD': np.round(np.std(err_tpd), 4),
+                'std_kt':  np.round(np.std(err_kt), 4),
+                'std_kt_pfd':  np.round(np.std(err_kt_pfd), 4),
+                'std_kt_tpd':  np.round(np.std(err_kt_tpd), 4),
+
+                'std_mt': np.round(np.std(err_mt), 4),
+                'std_mt_pfd': np.round(np.std(err_mt_pfd), 4),
+                'std_mt_tpd': np.round(np.std(err_mt_tpd), 4),
+
+                'std_mt_a': np.round(np.std(err_mt_a), 4),
+                'std_mt_pfd_a': np.round(np.std(err_mt_pfd_a), 4),
+                'std_mt_tpd_a': np.round(np.std(err_mt_tpd_a), 4),
+
+                'std_mt_b': np.round(np.std(err_mt_b), 4),
+                'std_mt_pfd_b': np.round(np.std(err_mt_pfd_b), 4),
+                'std_mt_tpd_b': np.round(np.std(err_mt_tpd_b), 4),
+
+                'mae_kt':  np.round(np.mean(mae_kt), 4),
+                'mae_kt_pfd':  np.round(np.mean(mae_kt_pfd), 4),
+                'mae_kt_tpd':  np.round(np.mean(mae_kt_tpd), 4),
+
+                'mae_mt': np.round(np.mean(mae_mt), 4),
+                'mae_mt_pfd': np.round(np.mean(mae_mt_pfd), 4),
+                'mae_mt_tpd': np.round(np.mean(mae_mt_tpd), 4),
+
+                'mae_mt_a': np.round(np.mean(mae_mt_a), 4),
+                'mae_mt_pfd_a': np.round(np.mean(mae_mt_pfd_a), 4),
+                'mae_mt_tpd_a': np.round(np.mean(mae_mt_tpd_a), 4),
+
+                'mae_mt_b': np.round(np.mean(mae_mt_b), 4),
+                'mae_mt_pfd_b': np.round(np.mean(mae_mt_pfd_b), 4),
+                'mae_mt_tpd_b': np.round(np.mean(mae_mt_tpd_b), 4),
+
+                'std_mae_kt':  np.round(np.std(mae_kt), 4),
+                'std_mae_kt_pfd':  np.round(np.std(mae_kt_pfd), 4),
+                'std_mae_kt_tpd':  np.round(np.std(mae_kt_tpd), 4),
+
+                'std_mae_mt': np.round(np.std(mae_mt), 4),
+                'std_mae_mt_pfd': np.round(np.std(mae_mt_pfd), 4),
+                'std_mae_mt_tpd': np.round(np.std(mae_mt_tpd), 4),
+
+                'std_mae_mt_a': np.round(np.std(mae_mt_a), 4),
+                'std_mae_mt_pfd_a': np.round(np.std(mae_mt_pfd_a), 4),
+                'std_mae_mt_tpd_a': np.round(np.std(mae_mt_tpd_a), 4),
+
+                'std_mae_mt_b': np.round(np.std(mae_mt_b), 4),
+                'std_mae_mt_pfd_b': np.round(np.std(mae_mt_pfd_b), 4),
+                'std_mae_mt_tpd_b': np.round(np.std(mae_mt_tpd_b), 4)
             }   
 
     df1 = pd.DataFrame(off, index = [0])
@@ -441,7 +667,7 @@ for q in text:
     dff  = pd.concat([dff, df1]).reset_index(drop = True)
 
 
-dff.to_csv('MAE_EuBands_unet_' + PP + '_' + str(epo) + '_' + str(bs) + '_' + str(pat)+ '_' + str(n_iter)+ '.csv')
+dff.to_csv('loss_EuBands_unet_' + PP + '_' + str(epo) + '_' + str(bs) + '_' + str(pat)+ '_' + str(n_iter)+ '.csv')
 
 
 
