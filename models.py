@@ -2,7 +2,7 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models
 
-'''
+
 def fcnn(input_shape=(64, 64, 3)):
     model = tf.keras.Sequential([
     tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
@@ -13,6 +13,7 @@ def fcnn(input_shape=(64, 64, 3)):
     tf.keras.layers.Dense(1, activation='sigmoid')])
     return model
 '''
+#Prueba con más capas en el clasificador a ver que ocurría
 def fcnn(input_shape=(64, 64, 3)):
     model = tf.keras.Sequential([
         # Capa convolucional adicional
@@ -35,7 +36,7 @@ def fcnn(input_shape=(64, 64, 3)):
     ])
     
     return model
-
+'''
 
 # U-Net para predecir la IR
 def simple_unet_ini(input_shape=(64, 64, 3)):

@@ -35,6 +35,15 @@ utim.extract_and_save_rgb_nir_swir_eurosat('eurosat/EuroSATallBands/Industrial')
 utim.extract_and_save_rgb_nir_swir_eurosat('eurosat/EuroSATallBands/Residential')
 
 
+utim.extract_and_save_swir2('eurosat/EuroSATallBands/River')
+utim.extract_and_save_swir2('eurosat/EuroSATallBands/Forest')
+utim.extract_and_save_swir2('eurosat/EuroSATallBands/AnnualCrop')
+utim.extract_and_save_swir2('eurosat/EuroSATallBands/PermanentCrop')
+utim.extract_and_save_swir2('eurosat/EuroSATallBands/Highway')
+utim.extract_and_save_swir2('eurosat/EuroSATallBands/Pasture')
+
+
+
 # %%
 #----------------------------------------------------------------
 #MODELO LOWER

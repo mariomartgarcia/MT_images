@@ -177,3 +177,71 @@ for i in ['River', 'Forest', 'AnnualCrop', 'PermanentCrop', 'Highway', 'Pasture'
         # Ejecutar la función
         copied_files = filter_and_copy_matching_files(rgb_folder, swir_folder, output_folder)
         print("Archivos copiados:", copied_files)
+
+
+
+
+def extract_and_save_swir2(input_folder):
+
+    def normalize_band(band):
+        norm_band = (band - band.min()) / (band.max() - band.min()) * 255
+        return np.clip(norm_band, 0, 255).astype(np.uint8)
+
+    base_dir = os.path.dirname(input_folder)
+    subfolder_name = os.path.basename(input_folder)
+
+    # Crear carpetas de salida
+    # rgb_folder = os.path.join(base_dir, f"{subfolder_name}RGB")
+    # nir_folder = os.path.join(base_dir, f"{subfolder_name}NIR")
+    # swir_folder = os.path.join(base_dir, f"{subfolder_name}SWIR")
+    swir2_folder = os.path.join(base_dir, f"{subfolder_name}SWIR2")  # Nueva carpeta SWIR2
+
+    # os.makedirs(rgb_folder, exist_ok=True)
+    # os.makedirs(nir_folder, exist_ok=True)
+    # os.makedirs(swir_folder, exist_ok=True)
+    os.makedirs(swir2_folder, exist_ok=True)  # Crear carpeta para SWIR2
+
+    # Procesar cada archivo TIFF
+    for filename in os.listdir(input_folder):
+        if filename.endswith('.tif'):
+            file_path = os.path.join(input_folder, filename)
+
+            try:
+                tiff_image = tiff.imread(file_path)
+
+                if len(tiff_image.shape) == 3 and tiff_image.shape[2] >= 13:
+                    # # Extraer bandas RGB
+                    # band_4 = normalize_band(tiff_image[:, :, 3])  # Rojo
+                    # band_3 = normalize_band(tiff_image[:, :, 2])  # Verde
+                    # band_2 = normalize_band(tiff_image[:, :, 1])  # Azul
+
+                    # rgb_image = np.stack((band_4, band_3, band_2), axis=-1)
+                    # rgb_output_path = os.path.join(rgb_folder, f"{os.path.splitext(filename)[0]}_RGB.png")
+                    # Image.fromarray(rgb_image).save(rgb_output_path)
+                    # print(f"Guardada RGB: {rgb_output_path}")
+
+                    # # Extraer banda NIR
+                    # nir_band = normalize_band(tiff_image[:, :, 7])  # Infrarrojo cercano (NIR)
+                    # nir_output_path = os.path.join(nir_folder, f"{os.path.splitext(filename)[0]}_NIR.png")
+                    # Image.fromarray(nir_band).save(nir_output_path)
+                    # print(f"Guardada NIR: {nir_output_path}")
+
+                    # # Extraer banda SWIR
+                    # swir_band = normalize_band(tiff_image[:, :, 10])  # SWIR
+                    # swir_output_path = os.path.join(swir_folder, f"{os.path.splitext(filename)[0]}_SWIR.png")
+                    # Image.fromarray(swir_band).save(swir_output_path)
+                    # print(f"Guardada SWIR: {swir_output_path}")
+
+                    # Extraer banda SWIR2
+                    swir2_band = normalize_band(tiff_image[:, :, 12])  # SWIR2
+                    swir2_output_path = os.path.join(swir2_folder, f"{os.path.splitext(filename)[0]}_SWIR2.png")
+                    Image.fromarray(swir2_band).save(swir2_output_path)
+                    print(f"Guardada SWIR2: {swir2_output_path}")
+
+                else:
+                    print(f"Saltando archivo (estructura no válida o insuficientes bandas): {file_path}")
+
+            except Exception as e:
+                print(f"Error procesando archivo {file_path}: {e}")
+
+    print("Proceso completado.")
