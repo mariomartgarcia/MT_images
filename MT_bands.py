@@ -46,6 +46,9 @@ dataset = [ ['Highway', 'River'], ['Pasture', 'Forest'], ['PermanentCrop', 'Annu
 #text    = ['High. vs River',  'Pasture vs An. Crop']
 #dataset = [ ['Highway', 'River'], ['Pasture', 'AnnualCrop']]
 
+#text    = ['High. vs River']
+#dataset = [ ['Highway', 'River']]
+
 datasets_dict = dict(zip(text, dataset))
 
 # %%

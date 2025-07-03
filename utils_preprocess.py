@@ -171,8 +171,8 @@ for i in ['River', 'Forest', 'AnnualCrop', 'PermanentCrop', 'Highway', 'Pasture'
     for j in ['train', 'test']:
         # Directorios de ejemplo
         rgb_folder = "eurosat/split/" + j + "/" + i  + "RGB"
-        swir_folder = "eurosat/EuroSATallBands/" + i + "SWIR"
-        output_folder = "eurosat/split/" + j + "/" + i + "SWIR"
+        swir_folder = "eurosat/EuroSATallBands/" + i + "SWIR2"
+        output_folder = "eurosat/split/" + j + "/" + i + "SWIR2"
 
         # Ejecutar la función
         copied_files = filter_and_copy_matching_files(rgb_folder, swir_folder, output_folder)
