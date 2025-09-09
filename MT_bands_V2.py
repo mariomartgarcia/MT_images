@@ -55,6 +55,9 @@ for q in text:
     err_mt, err_mt_tpd, err_mt_pfd = [[] for i in range(3)]
     err_pfd, err_tpd = [[] for i in range(2)]
 
+
+    
+
     #EUROSAT
 
     #------------------------------------------------------------------------------------------------

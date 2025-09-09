@@ -12,6 +12,19 @@ def fcnn(input_shape=(64, 64, 3)):
     tf.keras.layers.Dense(32, activation='relu'),
     tf.keras.layers.Dense(1, activation='sigmoid')])
     return model
+
+
+def fcnn_multi(n, input_shape=(64, 64, 3), T = 1):
+    model = tf.keras.Sequential([
+    tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
+    tf.keras.layers.MaxPooling2D((2, 2)),
+    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+    tf.keras.layers.GlobalAveragePooling2D(),
+    tf.keras.layers.Dense(32, activation='relu'),
+    tf.keras.layers.Dense(n),  # capa final sin activación
+    tf.keras.layers.Lambda(lambda x: tf.nn.softmax(x / T))  # softmax con temperatura
+    ])
+    return model
 '''
 #Prueba con más capas en el clasificador a ver que ocurría
 def fcnn(input_shape=(64, 64, 3)):
@@ -187,6 +200,40 @@ def MT_band(reg_sh = (64, 64, 3), pri_sh = (64, 64, 4)):
     
     return multi_task_model
 
+
+def MT_band_multi(n, reg_sh = (64, 64, 3), pri_sh = (64, 64, 4), T = 1):
+    unet_model = simple_unet(input_shape = reg_sh)
+    classifier_model = fcnn_multi(n, input_shape = pri_sh, T = 1) 
+
+    rgb_input = layers.Input(shape=reg_sh)
+    ir_predicted = unet_model(rgb_input)  
+
+    concatenated = layers.Concatenate(axis=-1)([rgb_input, ir_predicted])
+
+    classification_output = classifier_model(concatenated)
+    tf.print(classification_output)
+    classification_output_expanded = layers.Reshape((1, 1, n))(classification_output)
+    classification_output_upsampled = layers.UpSampling2D(size=(64, 64))(classification_output_expanded) 
+
+
+    #External parameters
+    sigma_output = ExtLayer()(rgb_input)
+    temp_output = ExtLayer()(rgb_input)
+
+
+    sigma_out_expand = layers.Reshape((1, 1, 1))(sigma_output)
+    sigma = layers.UpSampling2D(size=(64, 64))(sigma_out_expand) 
+
+    temperature_out_expand = layers.Reshape((1, 1, 1))(temp_output)
+    temperature = layers.UpSampling2D(size=(64, 64))(temperature_out_expand)
+
+
+    conc= layers.Concatenate(axis=-1)([ir_predicted, classification_output_upsampled,
+                                        sigma, temperature])
+
+    multi_task_model = models.Model(inputs=rgb_input, outputs=[conc])
+    
+    return multi_task_model
 
 
 #PARA 256

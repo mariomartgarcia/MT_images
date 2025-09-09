@@ -9,6 +9,13 @@ import utils as ut
 import models as mo
 import pandas as pd
 import argparse
+from sklearn.metrics import roc_auc_score, f1_score
+
+
+
+
+
+
 
 #python MT_bands.py -PP SWIR -epo 1 -bs 500 -pat 5 -iter 1
 
@@ -32,22 +39,22 @@ n_iter = args.iter
 PP = args.pp
 
 '''
-epo = 10
+epo = 2
 bs = 500
-pat = 5
+pat = 1
 n_iter = 1
 PP = 'NIR'
 '''
 
 dff = pd.DataFrame()
 
-text    = ['High. vs River', 'Pasture vs Forest', 'Per. crop vs An. Crop', 'Pasture vs An. Crop', 'Pasture vs Per. Crop'] 
-dataset = [ ['Highway', 'River'], ['Pasture', 'Forest'], ['PermanentCrop', 'AnnualCrop'], ['Pasture', 'AnnualCrop'], ['Pasture', 'PermanentCrop']]
+#text    = ['High. vs River', 'Pasture vs Forest', 'Per. crop vs An. Crop', 'Pasture vs An. Crop', 'Pasture vs Per. Crop'] 
+#dataset = [ ['Highway', 'River'], ['Pasture', 'Forest'], ['PermanentCrop', 'AnnualCrop'], ['Pasture', 'AnnualCrop'], ['Pasture', 'PermanentCrop']]
 #text    = ['High. vs River',  'Pasture vs An. Crop']
 #dataset = [ ['Highway', 'River'], ['Pasture', 'AnnualCrop']]
 
-#text    = ['High. vs River']
-#dataset = [ ['Highway', 'River']]
+text    = ['High. vs River']
+dataset = [ ['Highway', 'River']]
 
 datasets_dict = dict(zip(text, dataset))
 
@@ -60,6 +67,14 @@ for q in text:
     err_kt, err_kt_tpd, err_kt_pfd = [[] for i in range(3)]
     err_mt, err_mt_tpd, err_mt_pfd = [[] for i in range(3)]
     err_pfd, err_tpd = [[] for i in range(2)]
+
+    auc_up, auc_b, auc_kt, auc_kt_pfd, auc_kt_tpd = [[] for _ in range(5)]
+    auc_mt, auc_mt_pfd, auc_mt_tpd = [[] for _ in range(3)]
+    auc_pfd, auc_tpd = [[] for _ in range(2)]
+
+    f1_up, f1_b, f1_kt, f1_kt_pfd, f1_kt_tpd = [[] for _ in range(5)]
+    f1_mt, f1_mt_pfd, f1_mt_tpd = [[] for _ in range(3)]
+    f1_pfd, f1_tpd = [[] for _ in range(2)]
 
     #EUROSAT
     print(q)
@@ -99,6 +114,9 @@ for q in text:
 
         pre = np.round(np.ravel(model.predict(test_pri)))
         err_up.append( 1 - accuracy_score(pre, test_labels))
+        auc_up.append(roc_auc_score(test_labels, np.ravel(model.predict(test_pri))))
+        f1_up.append(f1_score(test_labels, pre))
+        
 
         #Distillation training data
         pre_prob_upper = np.ravel(model.predict(train_pri))
@@ -127,6 +145,8 @@ for q in text:
 
         pre = np.round(np.ravel(model.predict(test_rgb)))
         err_b.append( 1 - accuracy_score(pre, test_labels))
+        auc_b.append(roc_auc_score(test_labels, np.ravel(model.predict(test_rgb))))
+        f1_b.append(f1_score(test_labels, pre))
 
         #---------------------------------------------
         #KNOWLEDGE TRANSFER STANDARD
@@ -172,6 +192,8 @@ for q in text:
 
         pre = np.round(np.ravel(model.predict(test_concat)))
         err_kt.append( 1 - accuracy_score(pre, test_labels))
+        auc_kt.append(roc_auc_score(test_labels, np.ravel(model.predict(test_concat))))
+        f1_kt.append(f1_score(test_labels, pre))
 
 
 
@@ -220,6 +242,8 @@ for q in text:
 
         pre = np.round(np.ravel(model.predict(test_concat)))
         err_kt_pfd.append( 1 - accuracy_score(pre, test_labels))
+        auc_kt_pfd.append(roc_auc_score(test_labels, np.ravel(model.predict(test_concat))))
+        f1_kt_pfd.append(f1_score(test_labels, pre))
 
 
 
@@ -269,6 +293,8 @@ for q in text:
 
         pre = np.round(np.ravel(model.predict(test_concat)))
         err_kt_tpd.append( 1 - accuracy_score(pre, test_labels))
+        auc_kt_tpd.append(roc_auc_score(test_labels, np.ravel(model.predict(test_concat))))
+        f1_kt_tpd.append(f1_score(test_labels, pre))
         
         #---------------------------------------------
         #PFD
@@ -288,6 +314,8 @@ for q in text:
         #Measure test error
         y_pre = np.ravel([np.round(i) for i in model.predict(test_rgb)])
         err_pfd.append(1-accuracy_score(test_labels, y_pre))
+        auc_pfd.append(roc_auc_score(test_labels, np.ravel(model.predict(test_rgb))))
+        f1_pfd.append(f1_score(test_labels, y_pre))
 
 
         #---------------------------------------------
@@ -308,6 +336,8 @@ for q in text:
         #Measure test error
         y_pre = np.ravel([np.round(i) for i in model.predict(test_rgb)])
         err_tpd.append(1-accuracy_score(test_labels, y_pre))
+        auc_tpd.append(roc_auc_score(test_labels, np.ravel(model.predict(test_rgb))))
+        f1_tpd.append(f1_score(test_labels, y_pre))
 
 
 
@@ -335,6 +365,8 @@ for q in text:
         # Calculate errors
         err_mt.append(1 - accuracy_score(test_labels, predictions))
         mae_mt.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+        auc_mt.append(roc_auc_score(test_labels, np.max(pred[:,:,:,1], axis = (1,2))))
+        f1_mt.append(f1_score(test_labels, predictions))
 
 
         #---------------------------------------------
@@ -363,6 +395,8 @@ for q in text:
         # Calculate errors
         err_mt_pfd.append(1 - accuracy_score(test_labels, predictions))
         mae_mt_pfd.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+        auc_mt_pfd.append(roc_auc_score(test_labels, np.max(pred[:,:,:,1], axis = (1,2))))
+        f1_mt_pfd.append(f1_score(test_labels, predictions))
 
 
         #---------------------------------------------
@@ -390,6 +424,8 @@ for q in text:
         # Calculate errors
         err_mt_tpd.append(1 - accuracy_score(test_labels, predictions))
         mae_mt_tpd.append(mean_absolute_error(np.ravel(test_nir), np.ravel(pred[:,:,:,0])))
+        auc_mt_tpd.append(roc_auc_score(test_labels, np.max(pred[:,:,:,1], axis = (1,2))))
+        f1_mt_tpd.append(f1_score(test_labels, predictions))
 
             
         tf.keras.backend.clear_session()
@@ -436,7 +472,49 @@ for q in text:
             'std_mae_kt_tpd':  np.round(np.std(mae_kt_tpd), 4),
             'std_mae_mt':   np.round(np.std(mae_mt), 4),
             'std_mae_mt_pfd':  np.round(np.std(mae_mt_pfd), 4),
-            'std_mae_mt_tpd':  np.round(np.std(mae_mt_tpd), 4)
+            'std_mae_mt_tpd':  np.round(np.std(mae_mt_tpd), 4),
+            # Métricas AUC
+            'auc_up': np.round(np.mean(auc_up), 4),
+            'auc_b': np.round(np.mean(auc_b), 4),
+            'auc_PFD': np.round(np.mean(auc_pfd), 4),
+            'auc_TPD': np.round(np.mean(auc_tpd), 4),
+            'auc_kt': np.round(np.mean(auc_kt), 4),
+            'auc_kt_pfd': np.round(np.mean(auc_kt_pfd), 4),
+            'auc_kt_tpd': np.round(np.mean(auc_kt_tpd), 4),
+            'auc_mt': np.round(np.mean(auc_mt), 4),
+            'auc_mt_pfd': np.round(np.mean(auc_mt_pfd), 4),
+            'auc_mt_tpd': np.round(np.mean(auc_mt_tpd), 4),
+            'std_auc_up': np.round(np.std(auc_up), 4),
+            'std_auc_b': np.round(np.std(auc_b), 4),
+            'std_auc_PFD': np.round(np.std(auc_pfd), 4),
+            'std_auc_TPD': np.round(np.std(auc_tpd), 4),
+            'std_auc_kt': np.round(np.std(auc_kt), 4),
+            'std_auc_kt_pfd': np.round(np.std(auc_kt_pfd), 4),
+            'std_auc_kt_tpd': np.round(np.std(auc_kt_tpd), 4),
+            'std_auc_mt': np.round(np.std(auc_mt), 4),
+            'std_auc_mt_pfd': np.round(np.std(auc_mt_pfd), 4),
+            'std_auc_mt_tpd': np.round(np.std(auc_mt_tpd), 4),
+            # Métricas F1
+            'f1_up': np.round(np.mean(f1_up), 4),
+            'f1_b': np.round(np.mean(f1_b), 4),
+            'f1_PFD': np.round(np.mean(f1_pfd), 4),
+            'f1_TPD': np.round(np.mean(f1_tpd), 4),
+            'f1_kt': np.round(np.mean(f1_kt), 4),
+            'f1_kt_pfd': np.round(np.mean(f1_kt_pfd), 4),
+            'f1_kt_tpd': np.round(np.mean(f1_kt_tpd), 4),
+            'f1_mt': np.round(np.mean(f1_mt), 4),
+            'f1_mt_pfd': np.round(np.mean(f1_mt_pfd), 4),
+            'f1_mt_tpd': np.round(np.mean(f1_mt_tpd), 4),
+            'std_f1_up': np.round(np.std(f1_up), 4),
+            'std_f1_b': np.round(np.std(f1_b), 4),
+            'std_f1_PFD': np.round(np.std(f1_pfd), 4),
+            'std_f1_TPD': np.round(np.std(f1_tpd), 4),
+            'std_f1_kt': np.round(np.std(f1_kt), 4),
+            'std_f1_kt_pfd': np.round(np.std(f1_kt_pfd), 4),
+            'std_f1_kt_tpd': np.round(np.std(f1_kt_tpd), 4),
+            'std_f1_mt': np.round(np.std(f1_mt), 4),
+            'std_f1_mt_pfd': np.round(np.std(f1_mt_pfd), 4),
+            'std_f1_mt_tpd': np.round(np.std(f1_mt_tpd), 4)
             }   
 
     df1 = pd.DataFrame(off, index = [0])
